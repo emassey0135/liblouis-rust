@@ -11,7 +11,7 @@ fn main() {
     let mut builder = bindgen::Builder::default().header("wrapper.h");
 
     match pkg_config::Config::new()
-        .atleast_version("3.1.0")
+        .atleast_version("3.9.0")
         .probe("liblouis")
     {
         Ok(system_liblouis) => {
@@ -22,16 +22,16 @@ fn main() {
         }
         Err(e) => {
             info!("pkg-config error while trying to detect liblouis: {}", e);
-            info!("building liblouis 3.7.0 from source");
+            info!("building liblouis 3.34.0 from source");
 
-            let dest = autotools::Config::new("liblouis-3.7.0")
-                .enable("-ucs4", None)
-                .disable("-dependency-tracking", None)
-                .without("-yaml", None)
+            let dest = autotools::Config::new("liblouis-3.34.0")
+                .enable("ucs4", None)
+                .disable("dependency-tracking", None)
+                .without("yaml", None)
                 .build();
 
             unsafe { env::set_var("PKG_CONFIG_PATH", dest.join("lib/pkgconfig")) };
-            let our_liblouis = pkg_config::Config::new().atleast_version("3.7.0").probe("liblouis").unwrap();
+            let our_liblouis = pkg_config::Config::new().atleast_version("3.34.0").probe("liblouis").unwrap();
             for path in our_liblouis.include_paths {
                 builder = builder.clang_args(&["-I", path.parent().unwrap().to_str().unwrap()]);
             }
