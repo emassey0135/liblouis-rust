@@ -8,6 +8,7 @@ categories = ["api-bindings", "text-processing", "localization", "encoding"]
 readme = "README.md"
 license = "GPL-3.0"
 keywords = ["braille", "accessibility", "translation"]
+edition = "2024"
 
 [workspace]
 members = [

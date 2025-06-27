@@ -13,7 +13,7 @@ use std::path::Path;
 
 pub mod modes;
 
-type LouisString = widestring::UCString<louis_sys::widechar>;
+type LouisString = widestring::U32CString;
 const OUTLEN_MULTIPLIER: c_int = 4 + 2 * std::mem::size_of::<louis_sys::widechar>() as c_int;
 
 /// A singleton that handles all access to liblouis.
@@ -46,7 +46,7 @@ impl Louis {
     }
 
     /// Returns the version of liblouis that this crate is linked against
-    pub fn version(&self) -> Result<semver::Version, semver::SemVerError> {
+    pub fn version(&self) -> Result<semver::Version, semver::Error> {
         let version_str = unsafe { CStr::from_ptr(louis_sys::lou_version()) }
             .to_str()
             .unwrap();
@@ -157,7 +157,7 @@ impl Louis {
         };
 
         unsafe{ outvec.set_len(outlen as usize)};
-        LouisString::new(outvec).unwrap().to_string().unwrap()
+        LouisString::from_vec(outvec).unwrap().to_string().unwrap()
     }
 
     fn configure_logging(&self) {
@@ -169,7 +169,7 @@ impl Louis {
 
     fn reset_logging(&self) {
         unsafe {
-            louis_sys::lou_setLogLevel(louis_sys::logLevels_LOG_INFO);
+            louis_sys::lou_setLogLevel(louis_sys::logLevels_LOU_LOG_INFO);
             louis_sys::lou_registerLogCallback(None);
         };
     }
@@ -184,27 +184,27 @@ impl Drop for Louis {
 
 fn lou_loglevel_to_level(level: c_uint) -> log::Level {
     match level {
-        0...louis_sys::logLevels_LOG_ALL => log::Level::Trace,
-        0...louis_sys::logLevels_LOG_DEBUG => log::Level::Debug,
-        0...louis_sys::logLevels_LOG_INFO => log::Level::Info,
-        0...louis_sys::logLevels_LOG_WARN => log::Level::Warn,
+        0..=louis_sys::logLevels_LOU_LOG_ALL => log::Level::Trace,
+        0..=louis_sys::logLevels_LOU_LOG_DEBUG => log::Level::Debug,
+        0..=louis_sys::logLevels_LOU_LOG_INFO => log::Level::Info,
+        0..=louis_sys::logLevels_LOU_LOG_WARN => log::Level::Warn,
         _ => log::Level::Error,
     }
 }
 
 fn filter_to_lou_loglevel(filter: log::LevelFilter) -> c_uint {
     match filter {
-        log::LevelFilter::Trace => louis_sys::logLevels_LOG_ALL,
-        log::LevelFilter::Debug => louis_sys::logLevels_LOG_DEBUG,
-        log::LevelFilter::Info => louis_sys::logLevels_LOG_INFO,
-        log::LevelFilter::Warn => louis_sys::logLevels_LOG_WARN,
-        log::LevelFilter::Error => louis_sys::logLevels_LOG_ERROR,
-        log::LevelFilter::Off => louis_sys::logLevels_LOG_OFF,
+        log::LevelFilter::Trace => louis_sys::logLevels_LOU_LOG_ALL,
+        log::LevelFilter::Debug => louis_sys::logLevels_LOU_LOG_DEBUG,
+        log::LevelFilter::Info => louis_sys::logLevels_LOU_LOG_INFO,
+        log::LevelFilter::Warn => louis_sys::logLevels_LOU_LOG_WARN,
+        log::LevelFilter::Error => louis_sys::logLevels_LOU_LOG_ERROR,
+        log::LevelFilter::Off => louis_sys::logLevels_LOU_LOG_OFF,
     }
 }
 
 unsafe extern "C" fn log_callback(level: louis_sys::logLevels, message: *const c_char) {
-    let message_str = CStr::from_ptr(message).to_string_lossy();
+    let message_str = unsafe { CStr::from_ptr(message) }.to_string_lossy();
     log!(target: "liblouis", lou_loglevel_to_level(level), "{}", message_str);
 }
 
