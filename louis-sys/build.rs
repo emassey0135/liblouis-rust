@@ -30,7 +30,7 @@ fn main() {
                 .without("-yaml", None)
                 .build();
 
-            env::set_var("PKG_CONFIG_PATH", dest.join("lib/pkgconfig"));
+            unsafe { env::set_var("PKG_CONFIG_PATH", dest.join("lib/pkgconfig")) };
             let our_liblouis = pkg_config::Config::new().atleast_version("3.7.0").probe("liblouis").unwrap();
             for path in our_liblouis.include_paths {
                 builder = builder.clang_args(&["-I", path.parent().unwrap().to_str().unwrap()]);
