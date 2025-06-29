@@ -1,9 +1,9 @@
 extern crate autotools;
 extern crate bindgen;
-#[macro_use]
 extern crate log;
 extern crate pkg_config;
 
+use log::info;
 use std::env;
 use std::path::PathBuf;
 
@@ -28,13 +28,14 @@ fn main() {
                 .enable("ucs4", None)
                 .disable("dependency-tracking", None)
                 .without("yaml", None)
+                .enable_static()
+                .disable_shared()
+                .config_option("host", Some(&env::var("TARGET").unwrap()))
                 .build();
 
-            unsafe { env::set_var("PKG_CONFIG_PATH", dest.join("lib/pkgconfig")) };
-            let our_liblouis = pkg_config::Config::new().atleast_version("3.34.0").probe("liblouis").unwrap();
-            for path in our_liblouis.include_paths {
-                builder = builder.clang_args(&["-I", path.parent().unwrap().to_str().unwrap()]);
-            }
+            builder = builder.clang_args(["-I", &dest.join("include").to_str().unwrap()]);
+            println!("cargo:rustc-link-search=native={}", dest.join("lib").display());
+            println!("cargo:rustc-link-lib=static=louis");
         }
     };
 
